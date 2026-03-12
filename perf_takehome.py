@@ -828,9 +828,12 @@ class KernelBuilder:
                     instr["valu"].append(("^", tmp_val_vec[1], tmp_val_vec[1], node_val_vec[1]))
                     for os in range(0,8):
                         instr["alu"].append(("^", tmp_val_vec[3]+os, tmp_val_vec[3]+os, node_val_vec[3]+os))
+                    instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][0], tmp_idx_vec[0], four_const_vec, node_val_addr_minus_one_vec))
+                    instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][2], tmp_idx_vec[2], four_const_vec, node_val_addr_minus_one_vec))
                     # preprocess node_val picking for level 2
                     instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+2][2], merge_node_vec[merge_vec_idx[1]+2][2], merge_node_vec[merge_vec_idx[1]+0][2]))
-                    instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][0], merge_node_vec[merge_vec_idx[1]+1][0], merge_node_vec[merge_vec_idx[1]+0][0]))
+                    for os in range(0,4):
+                        instr["alu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][0]+os, merge_node_vec[merge_vec_idx[1]+1][0]+os, merge_node_vec[merge_vec_idx[1]+0][0]+os))
                     instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+1][2], valMod2_vec_level[0][2], node_val_preload_vec[12], node_val_preload_vec[8]))
                     body.append(instr)
 
@@ -847,6 +850,8 @@ class KernelBuilder:
                     instr["valu"].append(("multiply_add", tmp_val_vec[1], hash_val3_const_vec[0], tmp_val_vec[1], hash_val1_const_vec[0]))
                     instr["valu"].append(("multiply_add", tmp_val_vec[3], hash_val3_const_vec[0], tmp_val_vec[3], hash_val1_const_vec[0]))
                     # preprocess node_val picking for level 2
+                    for os in range(4,8):
+                        instr["alu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][0]+os, merge_node_vec[merge_vec_idx[1]+1][0]+os, merge_node_vec[merge_vec_idx[1]+0][0]+os))
                     instr["valu"].append(("multiply_add", merge_node_vec[merge_vec_idx[1]+0][2], valMod2_vec_level[1][2], merge_node_vec[merge_vec_idx[1]+2][2], merge_node_vec[merge_vec_idx[1]+0][2]))
                     instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+3][2], valMod2_vec_level[0][2], node_val_preload_vec[14], node_val_preload_vec[10]))
                     # preprocess node_val picking for level 3
@@ -905,16 +910,6 @@ class KernelBuilder:
                     # preprocess node_val picking for level 3
                     body.append(instr)
 
-                    instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-                    # idx = (2 * idx + 1) + val%2
-                    instr["valu"].append(("multiply_add", tmp_idx_vec[1], tmp_idx_vec[1], two_const_vec, valMod2_vec_level[1][1]))
-                    instr["valu"].append(("multiply_add", tmp_idx_vec[3], tmp_idx_vec[3], two_const_vec, valMod2_vec_level[1][3]))
-                    # preprocess node_val picking for level 2
-                    instr["valu"].append(("multiply_add", merge_node_vec[merge_vec_idx[1]+0][1], valMod2_vec_level[1][1], merge_node_vec[merge_vec_idx[1]+2][1], merge_node_vec[merge_vec_idx[1]+0][1]))
-                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+3][1], valMod2_vec_level[0][1], node_val_preload_vec[14], node_val_preload_vec[10]))
-                    # preprocess node_val picking for level 4
-                    body.append(instr)
-
                     # 5: val = ( val + 0xFD7046C5 ) + ( val << 3 ) = 9 * val + 0xFD7046C5
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
                     instr["valu"].append(("multiply_add", tmp_val_vec[0], hash_val3_const_vec[4], tmp_val_vec[0], hash_val1_const_vec[4]))
@@ -923,10 +918,12 @@ class KernelBuilder:
                     instr["valu"].append(("^", tmp_val_vec[1], tmp1_vec[1], tmp2_vec[1]))
                     for os in range(0,8):
                         instr["alu"].append(("^", tmp_val_vec[3]+os, tmp1_vec[3]+os, tmp2_vec[3]+os))
+                    # idx = (2 * idx + 1) + val%2
+                    instr["valu"].append(("multiply_add", tmp_idx_vec[1], tmp_idx_vec[1], two_const_vec, valMod2_vec_level[1][1]))
+                    instr["valu"].append(("multiply_add", tmp_idx_vec[3], tmp_idx_vec[3], two_const_vec, valMod2_vec_level[1][3]))
                     # preprocess node_val picking for level 2
-                    instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+3][1], merge_node_vec[merge_vec_idx[1]+3][1], merge_node_vec[merge_vec_idx[1]+1][1]))
-                    instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][2], merge_node_vec[merge_vec_idx[1]+1][2], merge_node_vec[merge_vec_idx[1]+0][2]))
-                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+0][3], valMod2_vec_level[0][3], node_val_preload_vec[11], node_val_preload_vec[7]))
+                    instr["valu"].append(("multiply_add", merge_node_vec[merge_vec_idx[1]+0][1], valMod2_vec_level[1][1], merge_node_vec[merge_vec_idx[1]+2][1], merge_node_vec[merge_vec_idx[1]+0][1]))
+                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+3][1], valMod2_vec_level[0][1], node_val_preload_vec[14], node_val_preload_vec[10]))
                     # preprocess node_val picking for level 4
                     body.append(instr)
 
@@ -942,10 +939,11 @@ class KernelBuilder:
                     # instr 1,3 shifted
                     instr["valu"].append(("multiply_add", tmp_val_vec[1], hash_val3_const_vec[4], tmp_val_vec[1], hash_val1_const_vec[4]))
                     instr["valu"].append(("multiply_add", tmp_val_vec[3], hash_val3_const_vec[4], tmp_val_vec[3], hash_val1_const_vec[4]))
-                    # preprocess node_val picking for level 2
-                    instr["valu"].append(("multiply_add", merge_node_vec[merge_vec_idx[1]+1][1], valMod2_vec_level[1][1], merge_node_vec[merge_vec_idx[1]+3][1], merge_node_vec[merge_vec_idx[1]+1][1]))
-                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+2][3], valMod2_vec_level[0][3], node_val_preload_vec[13], node_val_preload_vec[9]))
-                    # preprocess node_val picking for level 4
+                    # preprocess node_val picking for level 3
+                    instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+3][1], merge_node_vec[merge_vec_idx[1]+3][1], merge_node_vec[merge_vec_idx[1]+1][1]))
+                    for os in range(0,4):
+                        instr["alu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][2]+os, merge_node_vec[merge_vec_idx[1]+1][2]+os, merge_node_vec[merge_vec_idx[1]+0][2]+os))
+                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+0][3], valMod2_vec_level[0][3], node_val_preload_vec[11], node_val_preload_vec[7]))
                     body.append(instr)
 
                     # val = tmp1 ^ tmp2
@@ -958,10 +956,11 @@ class KernelBuilder:
                     instr["valu"].append((">>", tmp2_vec[1], tmp_val_vec[1], hash_val3_const_vec[5]))
                     for os in range(0,8):
                         instr["alu"].append((">>", tmp2_vec[3]+os, tmp_val_vec[3]+os, hash_val3_const_vec[5]))
-                    # preprocess node_val picking for level 2
-                    instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+2][3], merge_node_vec[merge_vec_idx[1]+2][3], merge_node_vec[merge_vec_idx[1]+0][3]))
-                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+1][3], valMod2_vec_level[0][3], node_val_preload_vec[12], node_val_preload_vec[8]))
-                    # preprocess node_val picking for level 4
+                    # preprocess node_val picking for level 3
+                    instr["valu"].append(("multiply_add", merge_node_vec[merge_vec_idx[1]+1][1], valMod2_vec_level[1][1], merge_node_vec[merge_vec_idx[1]+3][1], merge_node_vec[merge_vec_idx[1]+1][1]))
+                    for os in range(4,8):
+                        instr["alu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][2]+os, merge_node_vec[merge_vec_idx[1]+1][2]+os, merge_node_vec[merge_vec_idx[1]+0][2]+os))
+                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+2][3], valMod2_vec_level[0][3], node_val_preload_vec[13], node_val_preload_vec[9]))
                     body.append(instr)
 
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
@@ -971,7 +970,21 @@ class KernelBuilder:
                     instr["valu"].append(("^", tmp_val_vec[1], tmp1_vec[1], tmp2_vec[1]))
                     for os in range(0,8):
                         instr["alu"].append(("^", tmp_val_vec[3]+os, tmp1_vec[3]+os, tmp2_vec[3]+os))
-                    # preprocess node_val picking for level 2
+                    instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][1], tmp_idx_vec[1], four_const_vec, node_val_addr_minus_one_vec))
+                    instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][3], tmp_idx_vec[3], four_const_vec, node_val_addr_minus_one_vec))
+                    # preprocess node_val picking for level 3
+                    instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+2][3], merge_node_vec[merge_vec_idx[1]+2][3], merge_node_vec[merge_vec_idx[1]+0][3]))
+                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+1][3], valMod2_vec_level[0][3], node_val_preload_vec[12], node_val_preload_vec[8]))
+                    body.append(instr)
+
+                    instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+                    instr["valu"].append(("%", valMod2_vec_level[2][1], tmp_val_vec[1], two_const_vec))
+                    for os in range(0,8):
+                        instr["alu"].append(("%", valMod2_vec_level[2][3]+os, tmp_val_vec[3]+os, two_const_vec+os))
+                    instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][0], valMod2_vec_level[2][0], two_const_vec, load_addr_vec[addr_idx][0]))
+                    # preprocess node_val picking for level 3
+                    instr["valu"].append(("multiply_add", node_val_vec[0], valMod2_vec_level[2][0], merge_node_vec[merge_vec_idx[1]+1][0], merge_node_vec[merge_vec_idx[1]+0][0]))
+                    instr["valu"].append(("multiply_add", node_val_vec[2], valMod2_vec_level[2][2] ,merge_node_vec[merge_vec_idx[1]+1][2], merge_node_vec[merge_vec_idx[1]+0][2]))
                     instr["valu"].append(("multiply_add", merge_node_vec[merge_vec_idx[1]+0][3], valMod2_vec_level[1][3], merge_node_vec[merge_vec_idx[1]+2][3], merge_node_vec[merge_vec_idx[1]+0][3]))
                     instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][1], merge_node_vec[merge_vec_idx[1]+1][1], merge_node_vec[merge_vec_idx[1]+0][1]))
                     instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+3][3], valMod2_vec_level[0][3], node_val_preload_vec[14], node_val_preload_vec[10]))
@@ -979,24 +992,8 @@ class KernelBuilder:
                     body.append(instr)
 
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-                    instr["valu"].append(("%", valMod2_vec_level[2][1], tmp_val_vec[1], two_const_vec))
-                    instr["valu"].append(("%", valMod2_vec_level[2][3], tmp_val_vec[3], two_const_vec))
-                    # preprocess index picking for level 2
-                    instr["valu"].append(("multiply_add", tmp_idx_vec[0], tmp_idx_vec[0], two_const_vec, valMod2_vec_level[2][0]))
-                    instr["valu"].append(("multiply_add", tmp_idx_vec[2], tmp_idx_vec[2], two_const_vec, valMod2_vec_level[2][2]))
-                    # preprocess node_val picking for level 2
-                    instr["valu"].append(("multiply_add", node_val_vec[0], valMod2_vec_level[2][0], merge_node_vec[merge_vec_idx[1]+1][0], merge_node_vec[merge_vec_idx[1]+0][0]))
-                    instr["valu"].append(("multiply_add", node_val_vec[2], valMod2_vec_level[2][2] ,merge_node_vec[merge_vec_idx[1]+1][2], merge_node_vec[merge_vec_idx[1]+0][2]))
-                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+1][3], valMod2_vec_level[1][3], merge_node_vec[merge_vec_idx[1]+3][3], merge_node_vec[merge_vec_idx[1]+1][3]))
                     # preprocess node_val picking for level 3
-                    body.append(instr)
-
-                    instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-                    instr["valu"].append(("multiply_add", tmp_idx_vec[1], tmp_idx_vec[1], two_const_vec, valMod2_vec_level[2][1]))
-                    instr["valu"].append(("multiply_add", tmp_idx_vec[3], tmp_idx_vec[3], two_const_vec, valMod2_vec_level[2][3]))
-                    instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][0], tmp_idx_vec[0], two_const_vec, node_val_addr_minus_one_vec))
-                    instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][2], tmp_idx_vec[2], two_const_vec, node_val_addr_minus_one_vec))
-                    instr["valu"].append(("-", merge_node_vec[merge_vec_idx[1]+1][3], merge_node_vec[merge_vec_idx[1]+1][3], merge_node_vec[merge_vec_idx[1]+0][3]))
+                    instr["flow"].append(("vselect", merge_node_vec[merge_vec_idx[1]+1][3], valMod2_vec_level[1][3], merge_node_vec[merge_vec_idx[1]+3][3], merge_node_vec[merge_vec_idx[1]+1][3]))
                     body.append(instr)
                     # node_val = next_node_val1 + (val%2) * (next_node_val2 - next_node_val1)
                 # all other rounds
@@ -1004,12 +1001,15 @@ class KernelBuilder:
                     # val = myhash(val ^ node_val) - vectorized for all 8 elements 
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
                     instr["valu"].append(("^", tmp_val_vec[0], tmp_val_vec[0], node_val_vec[0]))
-                    instr["valu"].append(("^", tmp_val_vec[2], tmp_val_vec[2], node_val_vec[2]))
+                    for os in range(0,8):
+                        instr["alu"].append(("^", tmp_val_vec[2]+os, tmp_val_vec[2]+os, node_val_vec[2]+os))
                     if level == 3:
                         instr["valu"].append(("multiply_add", node_val_vec[1], valMod2_vec_level[2][1], merge_node_vec[merge_vec_idx[1]+1][1], merge_node_vec[merge_vec_idx[1]+0][1]))
-                        instr["valu"].append(("multiply_add", node_val_vec[3], valMod2_vec_level[2][3], merge_node_vec[merge_vec_idx[1]+1][3], merge_node_vec[merge_vec_idx[1]+0][3]))
-                        instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][1], tmp_idx_vec[1], two_const_vec, node_val_addr_minus_one_vec))
-                        instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][3], tmp_idx_vec[3], two_const_vec, node_val_addr_minus_one_vec))
+                        instr["flow"].append(("vselect", node_val_vec[3], valMod2_vec_level[2][3], merge_node_vec[merge_vec_idx[1]+1][3], merge_node_vec[merge_vec_idx[1]+0][3]))
+                        # preprocess index picking for level 2
+                        instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][2], valMod2_vec_level[2][2], two_const_vec, load_addr_vec[addr_idx][2]))
+                        instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][1], valMod2_vec_level[2][1], two_const_vec, load_addr_vec[addr_idx][1]))
+                        instr["valu"].append(("multiply_add", load_addr_vec[addr_idx][3], valMod2_vec_level[2][3], two_const_vec, load_addr_vec[addr_idx][3]))
                     # next_node_val = node_val[next_addr]
                     instr["load"].append(("vload", tmp3, load_addr_vec[addr_idx][0]))
                     instr["load"].append(("vload", tmp4, load_addr_vec[addr_idx][0]+1))
@@ -1021,7 +1021,12 @@ class KernelBuilder:
                     instr["valu"].append(("multiply_add", tmp_val_vec[0], hash_val3_const_vec[0], tmp_val_vec[0], hash_val1_const_vec[0]))
                     instr["valu"].append(("multiply_add", tmp_val_vec[2], hash_val3_const_vec[0], tmp_val_vec[2], hash_val1_const_vec[0]))
                     instr["valu"].append(("^", tmp_val_vec[1], tmp_val_vec[1], node_val_vec[1]))
-                    instr["valu"].append(("^", tmp_val_vec[3], tmp_val_vec[3], node_val_vec[3]))
+                    for os in range(0,8):
+                        instr["alu"].append(("^", tmp_val_vec[3]+os, tmp_val_vec[3]+os, node_val_vec[3]+os))
+                    if level == 3:
+                        instr["valu"].append(("multiply_add", tmp_idx_vec[0], tmp_idx_vec[0], two_const_vec, valMod2_vec_level[2][0]))
+                        instr["valu"].append(("multiply_add", tmp_idx_vec[2], tmp_idx_vec[2], two_const_vec, valMod2_vec_level[2][2]))
+                        instr["valu"].append(("multiply_add", tmp_idx_vec[1], tmp_idx_vec[1], two_const_vec, valMod2_vec_level[2][1]))
                     # idx = (2 * idx + 1) + val%2
                     instr["alu"].append(("+", next_node_val[0][0], tmp3, zero_const))
                     instr["alu"].append(("+", next_node_val[1][0], tmp3+1, zero_const))
@@ -1039,9 +1044,12 @@ class KernelBuilder:
                     instr["valu"].append(("^", tmp1_vec[2], tmp_val_vec[2], hash_val1_const_vec[1]))
                     # tmp2 = val >> 19
                     instr["valu"].append((">>", tmp2_vec[0], tmp_val_vec[0], hash_val3_const_vec[1]))
-                    instr["valu"].append((">>", tmp2_vec[2], tmp_val_vec[2], hash_val3_const_vec[1]))
+                    for os in range(0,8):
+                        instr["alu"].append((">>", tmp2_vec[2]+os, tmp_val_vec[2]+os, hash_val3_const_vec[1]+os))
                     instr["valu"].append(("multiply_add",tmp_val_vec[1],hash_val3_const_vec[0],tmp_val_vec[1],hash_val1_const_vec[0]))
                     instr["valu"].append(("multiply_add",tmp_val_vec[3],hash_val3_const_vec[0],tmp_val_vec[3],hash_val1_const_vec[0]))
+                    if level == 3:
+                        instr["valu"].append(("multiply_add", tmp_idx_vec[3], tmp_idx_vec[3], two_const_vec, valMod2_vec_level[2][3]))
                     instr["alu"].append(("+",next_node_val[0][0]+2,tmp3,zero_const))
                     instr["alu"].append(("+",next_node_val[1][0]+2,tmp3+1,zero_const))
                     instr["alu"].append(("+",next_node_val[0][0]+3,tmp4,zero_const))
@@ -1059,7 +1067,8 @@ class KernelBuilder:
                     instr["valu"].append(("^",tmp1_vec[1],tmp_val_vec[1],hash_val1_const_vec[1]))
                     instr["valu"].append(("^",tmp1_vec[3],tmp_val_vec[3],hash_val1_const_vec[1]))
                     instr["valu"].append((">>", tmp2_vec[1], tmp_val_vec[1], hash_val3_const_vec[1]))
-                    instr["valu"].append((">>", tmp2_vec[3], tmp_val_vec[3], hash_val3_const_vec[1]))
+                    for os in range(0,8):
+                        instr["alu"].append((">>", tmp2_vec[3]+os, tmp_val_vec[3]+os, hash_val3_const_vec[1]+os))
                     instr["alu"].append(("+",next_node_val[0][0]+4,tmp3,zero_const))
                     instr["alu"].append(("+",next_node_val[1][0]+4,tmp3+1,zero_const))
                     instr["alu"].append(("+",next_node_val[0][0]+5,tmp4,zero_const))
@@ -1084,7 +1093,6 @@ class KernelBuilder:
                     instr["valu"].append(("^",tmp_val_vec[1],tmp1_vec[1],tmp2_vec[1]))
                     for os in range(0,8):
                         instr["alu"].append(("^", tmp_val_vec[3]+os, tmp1_vec[3]+os, tmp2_vec[3]+os))
-                    instr["valu"].append(("multiply_add", load_addr_vec[1-addr_idx][0], four_const_vec, tmp_idx_vec[0], node_val_addr_minus_one_vec))
                     instr["alu"].append(("+",next_node_val[0][0]+6,tmp3,zero_const))
                     instr["alu"].append(("+",next_node_val[1][0]+6,tmp3+1,zero_const))
                     instr["alu"].append(("+",next_node_val[0][0]+7,tmp4,zero_const))
@@ -1099,7 +1107,6 @@ class KernelBuilder:
                     instr["valu"].append(("^", tmp_val_vec[0], tmp1_vec[0], tmp2_vec[0]))
                     for os in range(0,8):
                         instr["alu"].append(("^", tmp_val_vec[2]+os, tmp1_vec[2]+os, tmp2_vec[2]+os))
-                    instr["valu"].append(("multiply_add", load_addr_vec[1-addr_idx][2], four_const_vec, tmp_idx_vec[2], node_val_addr_minus_one_vec))
                     # instr 1,3 shifted
                     instr["valu"].append(("multiply_add", tmp1_vec[1], hash_val3_const_vec[2], tmp_val_vec[1], hash_val1_const_vec[2]))
                     instr["valu"].append(("multiply_add", tmp1_vec[3], hash_val3_const_vec[2], tmp_val_vec[3], hash_val1_const_vec[2]))
@@ -1114,16 +1121,6 @@ class KernelBuilder:
                     instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][2]+3))
                     body.append(instr)
 
-                    instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-                    instr["alu"].append(("+",next_node_val[0][2]+2,tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][2]+2,tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][2]+3,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][2]+3,tmp4+1,zero_const))
-                    # next_node_val = node_val[next_addr]
-                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][2]+4))
-                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][2]+5))
-                    body.append(instr)
-
                     # 5: val = ( val + 0xFD7046C5 ) + ( val << 3 ) = 9 * val + 0xFD7046C5
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
                     instr["valu"].append(("multiply_add", tmp_val_vec[0], hash_val3_const_vec[4], tmp_val_vec[0], hash_val1_const_vec[4]))
@@ -1131,13 +1128,16 @@ class KernelBuilder:
                     # instr 1,3 shifted
                     instr["valu"].append(("^",tmp_val_vec[1],tmp1_vec[1],tmp2_vec[1]))
                     instr["valu"].append(("^",tmp_val_vec[3],tmp1_vec[3],tmp2_vec[3]))
-                    instr["alu"].append(("+",next_node_val[0][2]+4,tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][2]+4,tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][2]+5,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][2]+5,tmp4+1,zero_const))
+                    instr["valu"].append(("multiply_add", load_addr_vec[1-addr_idx][0], four_const_vec, tmp_idx_vec[0], node_val_addr_minus_one_vec))
+                    instr["valu"].append(("multiply_add", load_addr_vec[1-addr_idx][2], four_const_vec, tmp_idx_vec[2], node_val_addr_minus_one_vec))
+                    # align next_node_val
+                    instr["alu"].append(("+",next_node_val[0][2]+2,tmp3,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][2]+2,tmp3+1,zero_const))
+                    instr["alu"].append(("+",next_node_val[0][2]+3,tmp4,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][2]+3,tmp4+1,zero_const))
                     # next_node_val = node_val[next_addr]
-                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][2]+6))
-                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][2]+7))
+                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][2]+4))
+                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][2]+5))
                     body.append(instr)
 
                     # 6: val = ( val ^ 0xB55A4F09 ) ^ ( val >> 16 )
@@ -1151,13 +1151,14 @@ class KernelBuilder:
                     # instr 1,3 shifted
                     instr["valu"].append(("multiply_add",tmp_val_vec[1],hash_val3_const_vec[4],tmp_val_vec[1],hash_val1_const_vec[4]))
                     instr["valu"].append(("multiply_add",tmp_val_vec[3],hash_val3_const_vec[4],tmp_val_vec[3],hash_val1_const_vec[4]))
-                    instr["alu"].append(("+",next_node_val[0][2]+6,tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][2]+6,tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][2]+7,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][2]+7,tmp4+1,zero_const))
+                    # align next_node_val
+                    instr["alu"].append(("+",next_node_val[0][2]+4,tmp3,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][2]+4,tmp3+1,zero_const))
+                    instr["alu"].append(("+",next_node_val[0][2]+5,tmp4,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][2]+5,tmp4+1,zero_const))
                     # next_node_val = node_val[next_addr]
-                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]))
-                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+1))
+                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][2]+6))
+                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][2]+7))
                     body.append(instr)
 
                     # val = tmp1 ^ tmp2
@@ -1169,13 +1170,14 @@ class KernelBuilder:
                     instr["valu"].append(("^",tmp1_vec[3],tmp_val_vec[3],hash_val1_const_vec[5]))
                     instr["valu"].append((">>", tmp2_vec[1], tmp_val_vec[1], hash_val3_const_vec[5]))
                     instr["valu"].append((">>", tmp2_vec[3], tmp_val_vec[3], hash_val3_const_vec[5]))
-                    instr["alu"].append(("+",next_node_val[0][1],tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1],tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][1]+1,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1]+1,tmp4+1,zero_const))
+                    # align next_node_val
+                    instr["alu"].append(("+",next_node_val[0][2]+6,tmp3,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][2]+6,tmp3+1,zero_const))
+                    instr["alu"].append(("+",next_node_val[0][2]+7,tmp4,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][2]+7,tmp4+1,zero_const))
                     # next_node_val = node_val[next_addr]
-                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]+2))
-                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+3))
+                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]))
+                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+1))
                     body.append(instr)
 
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
@@ -1190,13 +1192,14 @@ class KernelBuilder:
                     instr["valu"].append(("%",valMod2_vec_level[0][2], tmp_val_vec[2], two_const_vec))
                     instr["valu"].append(("multiply_add", load_addr_vec[1-addr_idx][1], four_const_vec, tmp_idx_vec[1], node_val_addr_minus_one_vec))
                     instr["valu"].append(("multiply_add", load_addr_vec[1-addr_idx][3], four_const_vec, tmp_idx_vec[3], node_val_addr_minus_one_vec))
-                    instr["alu"].append(("+",next_node_val[0][1]+2,tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1]+2,tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][1]+3,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1]+3,tmp4+1,zero_const))
+                    # align next_node_val
+                    instr["alu"].append(("+",next_node_val[0][1],tmp3,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1],tmp3+1,zero_const))
+                    instr["alu"].append(("+",next_node_val[0][1]+1,tmp4,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1]+1,tmp4+1,zero_const))
                     # next_node_val = node_val[next_addr]
-                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]+4))
-                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+5))
+                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]+2))
+                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+3))
                     body.append(instr)
 
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
@@ -1207,13 +1210,14 @@ class KernelBuilder:
                     # idx = (2 * idx + 1) + val%2
                     instr["valu"].append(("multiply_add", tmp_idx_vec[0], two_const_vec, tmp_idx_vec[0], valMod2_vec_level[0][0]))
                     instr["valu"].append(("multiply_add", tmp_idx_vec[2], two_const_vec, tmp_idx_vec[2], valMod2_vec_level[0][2]))
-                    instr["alu"].append(("+",next_node_val[0][1]+4,tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1]+4,tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][1]+5,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1]+5,tmp4+1,zero_const))
+                    # align next_node_val
+                    instr["alu"].append(("+",next_node_val[0][1]+2,tmp3,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1]+2,tmp3+1,zero_const))
+                    instr["alu"].append(("+",next_node_val[0][1]+3,tmp4,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1]+3,tmp4+1,zero_const))
                     # next_node_val = node_val[next_addr]
-                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]+6))
-                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+7))
+                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]+4))
+                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+5))
                     # with previous round idx, we can preload node_values at 2*idx + 1 and 2*idx+2
                     # once val%2 is determined, we can choose to pick which node_values
                     instr["flow"].append(("vselect", node_val_vec[0], valMod2_vec_level[0][0], next_node_val[1][0], next_node_val[0][0]))
@@ -1225,15 +1229,16 @@ class KernelBuilder:
                     # idx = (2 * idx + 1) + val%2
                     instr["valu"].append(("multiply_add", tmp_idx_vec[1], two_const_vec, tmp_idx_vec[1], valMod2_vec_level[0][1]))
                     instr["valu"].append(("multiply_add", tmp_idx_vec[3], two_const_vec, tmp_idx_vec[3], valMod2_vec_level[0][3]))
-                    instr["alu"].append(("+",next_node_val[0][1]+6,tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1]+6,tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][1]+7,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][1]+7,tmp4+1,zero_const))
-                    for os in range(2,8):
+                    for os in range(0,8):
                         instr["alu"].append(("+",load_addr_vec[addr_idx][3]+os,load_addr_vec[addr_idx][3]+os,valMod2_vec_level[0][3]+os))
+                    # align next_node_val
+                    instr["alu"].append(("+",next_node_val[0][1]+4,tmp3,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1]+4,tmp3+1,zero_const))
+                    instr["alu"].append(("+",next_node_val[0][1]+5,tmp4,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1]+5,tmp4+1,zero_const))
                     # next_node_val = node_val[next_addr]
-                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][3]))
-                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][3]+1))
+                    instr["load"].append(("vload",tmp3,load_addr_vec[addr_idx][1]+6))
+                    instr["load"].append(("vload",tmp4,load_addr_vec[addr_idx][1]+7))
                     instr["flow"].append(("vselect", node_val_vec[2], valMod2_vec_level[0][2], next_node_val[1][2], next_node_val[0][2]))
                     body.append(instr)
 
@@ -1242,11 +1247,17 @@ class KernelBuilder:
                     # pre-calculate has no benefit when 4 vec combined into single instruction flow due to slot limit
                     # one cycle delay on calculating val%2 is always there
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-                    # next_idx = 2 * idx + [1:2]
-                    instr["alu"].append(("+",next_node_val[0][3],tmp3,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][3],tmp3+1,zero_const))
-                    instr["alu"].append(("+",next_node_val[0][3]+1,tmp4,zero_const))
-                    instr["alu"].append(("+",next_node_val[1][3]+1,tmp4+1,zero_const))
+                    # align next_node_val
+                    instr["alu"].append(("+",next_node_val[0][1]+6,tmp3,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1]+6,tmp3+1,zero_const))
+                    instr["alu"].append(("+",next_node_val[0][1]+7,tmp4,zero_const))
+                    instr["alu"].append(("+",next_node_val[1][1]+7,tmp4+1,zero_const))
+                    # next_node_val = node_val[next_addr]
+                    instr["load"].append(("vload",node_val_vec[3]+0,load_addr_vec[addr_idx][3]))
+                    instr["load"].append(("vload",node_val_vec[3]+1,load_addr_vec[addr_idx][3]+1))
+                    body.append(instr)
+
+                    instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
                     # next_node_val = node_val[next_addr]
                     instr["load"].append(("load",node_val_vec[3]+2,load_addr_vec[addr_idx][3]+2))
                     instr["load"].append(("load",node_val_vec[3]+3,load_addr_vec[addr_idx][3]+3))
@@ -1257,14 +1268,12 @@ class KernelBuilder:
                     # next_node_val = node_val[next_addr]
                     instr["load"].append(("load",node_val_vec[3]+4,load_addr_vec[addr_idx][3]+4))
                     instr["load"].append(("load",node_val_vec[3]+5,load_addr_vec[addr_idx][3]+5))
-                    instr["flow"].append(("select", node_val_vec[3], valMod2_vec_level[0][3], next_node_val[1][3], next_node_val[0][3]))
                     body.append(instr)
 
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
                     # next_node_val = node_val[next_addr]
                     instr["load"].append(("load",node_val_vec[3]+6,load_addr_vec[addr_idx][3]+6))
                     instr["load"].append(("load",node_val_vec[3]+7,load_addr_vec[addr_idx][3]+7))
-                    instr["flow"].append(("select", node_val_vec[3]+1, valMod2_vec_level[0][3]+1, next_node_val[1][3]+1, next_node_val[0][3]+1))
                     body.append(instr)
 
                     addr_idx = (1-addr_idx)
