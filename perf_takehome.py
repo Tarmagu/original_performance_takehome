@@ -385,6 +385,9 @@ class KernelBuilder:
                     instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
                     instr["valu"].append(("^", tmp_val_vec[0], tmp_val_vec[0], node_val_vec[0]))
                     instr["valu"].append(("^", tmp_val_vec[2], tmp_val_vec[2], node_val_vec[2]))
+                    # next_node_val = node_val[next_addr]
+                    instr["load"].append(("load",node_val_vec[3]+6,load_addr_vec[1-addr_idx][3]+6))
+                    instr["load"].append(("load",node_val_vec[3]+7,load_addr_vec[1-addr_idx][3]+7))
                     body.append(instr)
                     # hash #
                     # 1: val = (val + 0x7ED55D16) + (val << 12) = 4097 * val + 0x7ED55D16
@@ -1564,11 +1567,12 @@ class KernelBuilder:
                     instr["load"].append(("load",node_val_vec[3]+5,load_addr_vec[addr_idx][3]+5))
                     body.append(instr)
 
-                    instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-                    # next_node_val = node_val[next_addr]
-                    instr["load"].append(("load",node_val_vec[3]+6,load_addr_vec[addr_idx][3]+6))
-                    instr["load"].append(("load",node_val_vec[3]+7,load_addr_vec[addr_idx][3]+7))
-                    body.append(instr)
+                    if level != forest_height - 1:
+                        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+                        # next_node_val = node_val[next_addr]
+                        instr["load"].append(("load",node_val_vec[3]+6,load_addr_vec[addr_idx][3]+6))
+                        instr["load"].append(("load",node_val_vec[3]+7,load_addr_vec[addr_idx][3]+7))
+                        body.append(instr)
 
                     addr_idx = (1-addr_idx)
                     # node_val = next_node_val1 + (val%2) * (next_node_val2 - next_node_val1)
@@ -1581,12 +1585,6 @@ class KernelBuilder:
                 instr["load"].append(("vload",tmp_val_vec[2],next_store_load_val_addr_vec[2]))
                 instr["alu"].append(("+",store_load_val_addr_vec[0],next_store_load_val_addr_vec[0],zero_const))
                 instr["alu"].append(("+",store_load_val_addr_vec[2],next_store_load_val_addr_vec[2],zero_const))
-                instr["valu"].append(("vbroadcast",node_val_vec[0],const_node_val_vec))
-                instr["valu"].append(("vbroadcast",node_val_vec[1],const_node_val_vec))
-                for os in range(0,8):
-                    instr["alu"].append(("+",node_val_vec[2]+os,const_node_val_vec,zero_const))
-                instr["alu"].append(("+",node_val_vec[3],const_node_val_vec,zero_const))
-                instr["alu"].append(("+",node_val_vec[3]+1,const_node_val_vec,zero_const))
             body.append(instr)
             instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
             instr["store"].append(("vstore", store_load_val_addr_vec[1], tmp_val_vec[1]))
@@ -1600,12 +1598,6 @@ class KernelBuilder:
                 instr["alu"].append(("+",next_store_load_val_addr_vec[3],next_store_load_val_addr_vec[3],batch_stride))
                 instr["alu"].append(("+",store_load_val_addr_vec[1],next_store_load_val_addr_vec[1],zero_const))
                 instr["alu"].append(("+",store_load_val_addr_vec[3],next_store_load_val_addr_vec[3],zero_const))
-                instr["alu"].append(("+",node_val_vec[3]+2,const_node_val_vec,zero_const))
-                instr["alu"].append(("+",node_val_vec[3]+3,const_node_val_vec,zero_const))
-                instr["alu"].append(("+",node_val_vec[3]+4,const_node_val_vec,zero_const))
-                instr["alu"].append(("+",node_val_vec[3]+5,const_node_val_vec,zero_const))
-                instr["alu"].append(("+",node_val_vec[3]+6,const_node_val_vec,zero_const))
-                instr["alu"].append(("+",node_val_vec[3]+7,const_node_val_vec,zero_const))
                 # pre calculate tmp_val = tmp_val ^ node_val[0]
                 instr["valu"].append(("^",tmp_val_vec[0],tmp_val_vec[0],node_val_preload_vec[0]))
                 instr["valu"].append(("^",tmp_val_vec[2],tmp_val_vec[2],node_val_preload_vec[0]))
