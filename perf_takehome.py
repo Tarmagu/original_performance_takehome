@@ -149,59 +149,6 @@ class KernelBuilder:
         forest_val_addr = self.scratch["forest_values_p"]
 
         body = []  # array of slots
-        # hash const and multiplier
-        for i in range(VLEN,batch_load_size*VLEN, VLEN*2):
-            instr = self.scratch_two_const(i,i+VLEN)
-            body.append(instr)
-        instr = self.scratch_two_const(4,0)
-        body.append(instr)
-        zero_const = self.scratch_const(0)
-        four_const = self.scratch_const(4)
-        zero_const_vec = self.alloc_scratch("zero_const_vec",VLEN)
-        two_const_vec = self.alloc_scratch("two_const_vec",VLEN)
-        four_const_vec = self.alloc_scratch("four_const_vec",VLEN)
-        eight_const_vec = self.alloc_scratch("eight_const_vec",VLEN)
-        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-        instr["load"].append(("vload",self.scratch["rounds"],zero_const))
-        #addr = self.alloc_scratch()
-        #self.const_map[4] = addr
-        #instr["load"].append(("const",addr,4))
-        body.append(instr)
-        instr = self.scratch_two_const(1,2)
-        body.append(instr)
-        one_const = self.scratch_const(1)
-        two_const = self.scratch_const(2)
-        instr = self.scratch_two_const(4097,19)
-        body.append(instr)
-        instr["valu"].append(("vbroadcast", two_const_vec, two_const ))
-        instr["valu"].append(("vbroadcast", four_const_vec, four_const ))
-        instr["valu"].append(("vbroadcast", eight_const_vec, self.scratch_const(VLEN) ))
-        # 33, 33<<9
-        instr = self.scratch_two_const(33,16896)
-        body.append(instr)
-        instr = self.scratch_two_const(9,3)
-        body.append(instr)
-        hash_val3_const = []
-        hash_val3_const.append(self.scratch_const(4097))
-        hash_val3_const.append(self.scratch_const(19))
-        hash_val3_const.append(self.scratch_const(33))
-        hash_val3_const.append(self.scratch_const(16896))
-        hash_val3_const.append(self.scratch_const(9))
-        hash_val3_const.append(self.scratch_const(16))
-        instr = self.scratch_two_const(0x7ED55D16,0xC761C23C)
-        body.append(instr)
-        # 0x165667B1+0xD3A2646C, 0x165667B1<<9
-        instr = self.scratch_two_const(0xE9F8CC1D,0xACCF6200)
-        body.append(instr)
-        instr = self.scratch_two_const(0xFD7046C5,0xB55A4F09)
-        body.append(instr)
-        hash_val1_const = []
-        hash_val1_const.append(self.scratch_const(0x7ED55D16))
-        hash_val1_const.append(self.scratch_const(0xC761C23C))
-        hash_val1_const.append(self.scratch_const(0xE9F8CC1D))
-        hash_val1_const.append(self.scratch_const(0xACCF6200))
-        hash_val1_const.append(self.scratch_const(0xFD7046C5))
-        hash_val1_const.append(self.scratch_const(0xB55A4F09))
 
         # Pause instructions are matched up with yield statements in the reference
         # kernel to let you debug at intermediate steps. The testing harness in this
@@ -211,7 +158,7 @@ class KernelBuilder:
         # Any debug engine instruction is ignored by the submission simulator
         self.add("debug", ("comment", "Starting loop"))
 
-        # Scalar scratch registers
+        # allocate cache
         tmp_idx = self.alloc_scratch("tmp_idx",batch_load_size*VLEN)
         tmp_val = self.alloc_scratch("tmp_val",batch_load_size*VLEN)
         node_val = self.alloc_scratch("node_val",batch_load_size*VLEN)
@@ -248,12 +195,6 @@ class KernelBuilder:
 
         # vec const value
         node_val_addr.append(self.scratch["forest_values_p"])
-        hash_val3_const_vec = []
-        hash_val1_const_vec = []
-        # val3 of op4 and op5 are same( both 9)
-        for i in range(6):
-             hash_val3_const_vec.append(self.alloc_scratch(f"hash_val3_const_{i}_vec",VLEN))
-             hash_val1_const_vec.append(self.alloc_scratch(f"hash_val1_const_{i}_vec",VLEN))
 
         preload_level = 3
         preload_size = 1 << (preload_level+1)
@@ -282,83 +223,149 @@ class KernelBuilder:
             merge_node_vec.append(tmp_addr)
         node_val_addr_minus_one_vec = self.alloc_scratch("node_val_addr_minus_one_vec",VLEN)
 
-        # rewrite to append slots into instructions with different lines
-        # no need to broadcast 0
-        #instr.update({"valu":[("vbroadcast",zero_const_vec,zero_const)]})
+        # Scalar scratch registers
+        # hash const and multiplier
+        two_const_vec = self.alloc_scratch("two_const_vec",VLEN)
+        four_const_vec = self.alloc_scratch("four_const_vec",VLEN)
+        eight_const_vec = self.alloc_scratch("eight_const_vec",VLEN)
+        instr = self.scratch_two_const(0,VLEN)
+        zero_const = self.scratch_const(0)
+        body.append(instr)
+
+        hash_val3_const = []
+        hash_val1_const = []
+
         instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-        instr["valu"].append(("vbroadcast", hash_val3_const_vec[0], hash_val3_const[0] ))
-        instr["valu"].append(("vbroadcast", hash_val3_const_vec[1], hash_val3_const[1] ))
-        instr["valu"].append(("vbroadcast", hash_val3_const_vec[2], hash_val3_const[2] ))
-        instr["valu"].append(("vbroadcast", hash_val3_const_vec[3], hash_val3_const[3] ))
-        instr["valu"].append(("vbroadcast", hash_val3_const_vec[4], hash_val3_const[4] ))
-        instr["valu"].append(("vbroadcast", hash_val3_const_vec[5], hash_val3_const[5] ))
+        instr["load"].append(("vload",self.scratch["rounds"],zero_const))
+        addr = self.alloc_scratch()
+        self.const_map[9] = addr
+        instr["load"].append(("const",addr,9))
+        addr = self.alloc_scratch()
+        self.const_map[0x7ED55D16] = addr
+        instr["flow"].append(("add_imm", addr, zero_const, 0x7ED55D16))
+        hash_val1_const.append(addr)
+        body.append(instr)
+
+        instr = self.scratch_two_const(2*VLEN,3*VLEN)
+        addr = self.alloc_scratch()
+        self.const_map[0xC761C23C] = addr
+        instr["flow"].append(("add_imm", addr, zero_const, 0xC761C23C))
+        hash_val1_const.append(addr)
+        instr["valu"].append(("vbroadcast", eight_const_vec, self.scratch_const(VLEN) ))
+        instr["alu"].append(("+",node_val_addr[1],node_val_addr[0],self.scratch_const(VLEN)))
+        body.append(instr)
+
+        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+        # preload node_val[0:7] into const_node_val_vec
+        instr["load"].append(("vload",const_node_val_vec,node_val_addr[0]))
+        instr["load"].append(("vload",const_node_val_vec+VLEN,node_val_addr[1]))
+        one_const = self.alloc_scratch()
+        self.const_map[1] = one_const
+        instr["flow"].append(("add_imm", one_const, zero_const, 1))
         instr["alu"].append(("+", store_load_val_addr_vec[0], inp_val_addr, zero_const))
         instr["alu"].append(("+", store_load_val_addr_vec[1], inp_val_addr, self.scratch_const(VLEN)))
         instr["alu"].append(("+", store_load_val_addr_vec[2], inp_val_addr, self.scratch_const(2*VLEN)))
         instr["alu"].append(("+", store_load_val_addr_vec[3], inp_val_addr, self.scratch_const(3*VLEN)))
-        instr["alu"].append(("+",node_val_addr[1],node_val_addr[0],self.scratch_const(VLEN)))
-        # preload node_val[0:7] into const_node_val_vec
-        instr["load"].append(("vload",const_node_val_vec,node_val_addr[0]))
         body.append(instr)
 
-        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+        instr = self.scratch_two_const(4097,19)
+        hash_val3_const.append(self.scratch_const(4097))
+        hash_val3_const.append(self.scratch_const(19))
+        batch_stride = self.alloc_scratch()
+        self.const_map[32] = batch_stride
+        instr["flow"].append(("add_imm", batch_stride, zero_const, 32))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[0], const_node_val_vec+0 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[1], const_node_val_vec+1 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[3], const_node_val_vec+3 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[4], const_node_val_vec+4 ))
-        for os in range(0,2):
-            instr["valu"].append(("vbroadcast", hash_val1_const_vec[os], hash_val1_const[os]))
-        for os in range(0,8):
-            instr["alu"].append(("-",node_val_preload_vec[2]+os,const_node_val_vec+2,const_node_val_vec+1))
-        for os in range(0,4):
-            instr["alu"].append(("-",node_val_preload_vec[5]+os,const_node_val_vec+5,const_node_val_vec+3))
-        instr["load"].append(("vload",const_node_val_vec+VLEN,node_val_addr[1]))
-        # preload tmp_val = values[0:7]
-        instr["load"].append(("vload",tmp_val_vec[0],store_load_val_addr_vec[0]))
-        body.append(instr)
-
-        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+        instr["valu"].append(("vbroadcast", node_val_preload_vec[6], const_node_val_vec+6 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[7], const_node_val_vec+7 ))
-        instr["valu"].append(("vbroadcast", node_val_preload_vec[8], const_node_val_vec+8 ))
-        for os in range(2,5):
-            instr["valu"].append(("vbroadcast", hash_val1_const_vec[os], hash_val1_const[os]))
-        for os in range(0,8):
-            instr["alu"].append(("+", hash_val1_const_vec[5]+os, hash_val1_const[5], zero_const ))
-        for os in range(4,8):
-            instr["alu"].append(("-",node_val_preload_vec[5]+os,const_node_val_vec+5,const_node_val_vec+3))
-        # pre calculate tmp_val = tmp_val ^ node_val[0]
-        instr["valu"].append(("^",tmp_val_vec[0],tmp_val_vec[0],node_val_preload_vec[0]))
-        # preload tmp_val = values[16:23]
-        instr["load"].append(("vload",tmp_val_vec[2],store_load_val_addr_vec[2]))
         body.append(instr)
 
-        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+        hash_val3_const_vec = []
+        hash_val1_const_vec = []
+        # val3 of op4 and op5 are same( both 9)
+        for i in range(6):
+             hash_val3_const_vec.append(self.alloc_scratch(f"hash_val3_const_{i}_vec",VLEN))
+             hash_val1_const_vec.append(self.alloc_scratch(f"hash_val1_const_{i}_vec",VLEN))
+
+        # 33, 33<<9
+        instr = self.scratch_two_const(33,16896)
+        hash_val3_const.append(self.scratch_const(33))
+        hash_val3_const.append(self.scratch_const(16896))
+        hash_val3_const.append(self.scratch_const(9))
+        hash_val3_const.append(self.scratch_const(16))
+        instr["valu"].append(("vbroadcast", node_val_preload_vec[8], const_node_val_vec+8 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[9], const_node_val_vec+9 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[10], const_node_val_vec+10 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[11], const_node_val_vec+11 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[12], const_node_val_vec+12 ))
         instr["valu"].append(("vbroadcast", node_val_preload_vec[13], const_node_val_vec+13 ))
-        instr["valu"].append(("vbroadcast", node_val_preload_vec[14], const_node_val_vec+14 ))
+        for os in range(0,4):
+            instr["alu"].append(("-",node_val_preload_vec[2]+os,const_node_val_vec+2,const_node_val_vec+1))
+            instr["alu"].append(("-",node_val_preload_vec[5]+os,const_node_val_vec+5,const_node_val_vec+3))
+        for os in range(0,4):
+            instr["alu"].append(("+", next_store_load_val_addr_vec[os],store_load_val_addr_vec[os], batch_stride ))
+        # 0x165667B1+0xD3A2646C, 0x165667B1<<9
+        addr = self.alloc_scratch()
+        self.const_map[0xE9F8CC1D] = addr
+        instr["flow"].append(("add_imm", addr, zero_const, 0xE9F8CC1D))
+        hash_val1_const.append(addr)
+        body.append(instr)
+
+        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+        # preload tmp_val = values[0:7]
+        instr["load"].append(("vload", tmp_val_vec[0], store_load_val_addr_vec[0]))
+        # preload tmp_val = values[16:23]
+        instr["load"].append(("vload", tmp_val_vec[2], store_load_val_addr_vec[2]))
+        for os in range(0,6):
+            instr["valu"].append(("vbroadcast", hash_val3_const_vec[os], hash_val3_const[os] ))
+        for os in range(4,8):
+            instr["alu"].append(("-",node_val_preload_vec[2]+os,const_node_val_vec+2,const_node_val_vec+1))
+            instr["alu"].append(("-",node_val_preload_vec[5]+os,const_node_val_vec+5,const_node_val_vec+3))
+        for os in range(0,4):
+            instr["alu"].append(("-",node_val_preload_vec[14]+os,const_node_val_vec+14,const_node_val_vec+10))
+        # 0x165667B1+0xD3A2646C, 0x165667B1<<9
+        addr = self.alloc_scratch()
+        self.const_map[0xACCF6200] = addr
+        instr["flow"].append(("add_imm", addr, zero_const, 0xACCF6200))
+        hash_val1_const.append(addr)
+        body.append(instr)
+
+        instr = self.scratch_two_const(0xFD7046C5,0xB55A4F09)
+        hash_val1_const.append(self.scratch_const(0xFD7046C5))
+        hash_val1_const.append(self.scratch_const(0xB55A4F09))
+        instr["valu"].append(("-", node_val_preload_vec[12], node_val_preload_vec[12], node_val_preload_vec[8]))
+        instr["valu"].append(("-", node_val_preload_vec[13], node_val_preload_vec[13], node_val_preload_vec[9]))
+        # pre calculate tmp_val = tmp_val ^ node_val[0]
+        instr["valu"].append(("^", tmp_val_vec[0], tmp_val_vec[0], node_val_preload_vec[0]))
+        instr["valu"].append(("^", tmp_val_vec[2], tmp_val_vec[2], node_val_preload_vec[0]))
+        for os in range(4,8):
+            instr["alu"].append(("-",node_val_preload_vec[14]+os,const_node_val_vec+14,const_node_val_vec+10))
         for os in range(0,8):
-            #instr["alu"].append(("-", node_val_preload_vec[6]+os, const_node_val_vec+6, const_node_val_vec+4))
-            instr["alu"].append(("+", node_val_preload_vec[6]+os, const_node_val_vec+6, zero_const))
+            instr["alu"].append(("-", node_val_addr_minus_one_vec+os, forest_val_addr, one_const ))
+        for os in range(0,2):
+            instr["valu"].append(("vbroadcast", hash_val1_const_vec[os], hash_val1_const[os]))
+        two_const = self.alloc_scratch()
+        self.const_map[2] = two_const
+        instr["flow"].append(("add_imm", two_const, zero_const, 2))
+        body.append(instr)
+
+        instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
+        four_const = self.alloc_scratch()
+        self.const_map[4] = four_const
+        instr["flow"].append(("add_imm", four_const, zero_const, 4))
         # preload tmp_val = values[8:15]
         instr["load"].append(("vload", tmp_val_vec[1], store_load_val_addr_vec[1]))
         # preload tmp_val = values[24:31]
         instr["load"].append(("vload", tmp_val_vec[3], store_load_val_addr_vec[3]))
+        for os in range(2,6):
+            instr["valu"].append(("vbroadcast", hash_val1_const_vec[os], hash_val1_const[os]))
+        instr["valu"].append(("vbroadcast", two_const_vec, two_const ))
         body.append(instr)
 
-        batch_stride = self.scratch_const(batch_load_size*VLEN)
-
         instr = {"alu":[],"valu":[],"flow":[],"load":[],"store":[]}
-        instr["valu"].append(("-", node_val_preload_vec[12], node_val_preload_vec[12], node_val_preload_vec[8]))
-        instr["valu"].append(("-", node_val_preload_vec[13], node_val_preload_vec[13], node_val_preload_vec[9]))
-        instr["valu"].append(("-", node_val_preload_vec[14], node_val_preload_vec[14], node_val_preload_vec[10]))
-        instr["valu"].append(("^", tmp_val_vec[2], tmp_val_vec[2], node_val_preload_vec[0]))
-        for os in range(0,8):
-            instr["alu"].append(("-", node_val_addr_minus_one_vec+os, forest_val_addr, one_const ))
-        for os in range(0,4):
-            instr["alu"].append(("+", next_store_load_val_addr_vec[os],store_load_val_addr_vec[os],batch_stride ))
+        instr["valu"].append(("vbroadcast", four_const_vec, four_const ))
         body.append(instr)
 
         print("n_nodes=", n_nodes)
